@@ -1,6 +1,6 @@
 // Bump this on every deploy that changes cached assets — old caches are
 // cleaned up automatically in the 'activate' handler below.
-const CACHE_VERSION = 'SBV5THkzc-B-vaQCOHmjx';
+const CACHE_VERSION = '__NEXT_BUILD_ID__';
 const SHELL_CACHE = `app-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `app-runtime-${CACHE_VERSION}`;
 

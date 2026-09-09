@@ -1,19 +1,24 @@
 'use client';
 
+import { runtimeConfig } from '@/config/runtime.config';
 import api from '@/lib/axiosInstance';
 import { readStationCache, writeStationCache } from '@/lib/offline';
 import { createBranchNearbyDiscovery, createBranchViewportDiscovery } from '@/lib/stations';
 import { distanceMeters } from '@/lib/stations/distance';
 import { viewportCacheKey } from '@/lib/stations/viewport';
 import { useQuery } from '@tanstack/react-query';
-import { runtimeConfig } from '@/config/runtime.config';
+import { useEffect, useMemo, useState } from 'react';
 import type { IChargingBranch, IWallet } from './interface.ev';
 import type { IMapPosition, IViewportStationQuery } from './interface.map';
 import type { IUser } from './interface.schema';
 import { fetchMockCurrentUser } from './mock.currentUser';
 import { fetchMockBranch, fetchMockBranches, fetchMockWallet } from './mock.ev';
-import { BRANCH_DETAIL_ROUTE, BRANCHES_LIST_ROUTE, ME_ROUTE, WALLET_BALANCE_ROUTE } from './route.api';
-import { useEffect, useMemo, useState } from 'react';
+import {
+  BRANCH_DETAIL_ROUTE,
+  BRANCHES_LIST_ROUTE,
+  ME_ROUTE,
+  WALLET_BALANCE_ROUTE,
+} from './route.api';
 
 // STUB — flip NEXT_PUBLIC_USE_MOCK_USER=false once ME_ROUTE is confirmed and
 // live. Everything downstream (useUser, UserProvider, sidebar/dashboard role
@@ -74,8 +79,38 @@ const STATION_CACHE_STALE_TIME = 5 * 60 * 1000;
 const DEFAULT_NEARBY_RADIUS_METERS = 10_000;
 const DEFAULT_MOVEMENT_THRESHOLD_METERS = 3_000;
 
+// Safe to call anywhere INSIDE a queryFn (nearby/viewport below) — queryFn
+// only ever runs on the client, never during SSR, so `navigator` is always
+// defined by the time either call site above reaches this.
 function isOffline(): boolean {
   return typeof navigator !== 'undefined' && !navigator.onLine;
+}
+
+// NOT safe to call directly in a component/hook body — that runs during SSR
+// too, where `navigator` doesn't exist, so it always evaluates to `false`
+// there. Calling it synchronously in render (as the `offline` field used to)
+// makes the server commit to `false` while the client's first render can
+// immediately see the real (possibly `true`) value — a hydration mismatch,
+// same failure shape as `<main>`'s h-full and the sidebar skeleton's
+// Math.random(): a browser-only source read before hydration is settled.
+// This hook defers the real read to a `useEffect`, so both the server render
+// and the client's first paint agree on `false`, and it only updates after —
+// plus it stays live afterwards via the online/offline window events, which
+// a one-time isOffline() call never did anyway.
+function useIsOffline(): boolean {
+  const [offline, setOffline] = useState(false);
+  useEffect(() => {
+    setOffline(isOffline());
+    const goOnline = () => setOffline(false);
+    const goOffline = () => setOffline(true);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
+  return offline;
 }
 
 function errorMessage(error: unknown): string | null {
@@ -102,7 +137,8 @@ export function useNearbyStations(
   } = {}
 ): StationQueryState<IChargingBranch> {
   const radiusMeters = options.radiusMeters ?? DEFAULT_NEARBY_RADIUS_METERS;
-  const movementThresholdMeters = options.movementThresholdMeters ?? DEFAULT_MOVEMENT_THRESHOLD_METERS;
+  const movementThresholdMeters =
+    options.movementThresholdMeters ?? DEFAULT_MOVEMENT_THRESHOLD_METERS;
   const [anchorPosition, setAnchorPosition] = useState<IMapPosition | null>(position);
 
   useEffect(() => {
@@ -151,7 +187,7 @@ export function useNearbyStations(
     },
   });
 
-  const offline = isOffline();
+  const offline = useIsOffline();
   return {
     ...query,
     data: query.data ?? [],
@@ -208,7 +244,7 @@ export function useViewportStations(
     },
   });
 
-  const offline = isOffline();
+  const offline = useIsOffline();
   return {
     ...query,
     data: query.data ?? [],

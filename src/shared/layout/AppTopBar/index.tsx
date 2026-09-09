@@ -29,7 +29,11 @@ export function AppTopBar({ eyebrow, className }: AppTopBarProps) {
     <header className={`w-full flex flex-col gap-1 px-md pt-md ${className ?? ''}`}>
       {eyebrow && <span className="text-xs text-muted-foreground">{eyebrow}</span>}
       <div className="flex items-center justify-between">
-        <Link href="/notifications" aria-label="اعلان‌ها" className="rounded-full bg-foreground/5 p-2">
+        <Link
+          href="/notifications"
+          aria-label="اعلان‌ها"
+          className="rounded-full bg-foreground/5 p-2"
+        >
           <Bell className="size-5" />
         </Link>
 

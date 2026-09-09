@@ -30,7 +30,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   return (
     <nav
       dir="ltr"
-      className="bg-sidebar border-sidebar-border fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t lg:hidden"
+      className="bg-sidebar border-sidebar-border flex h-16 items-center justify-around border-t lg:hidden"
     >
       {visibleItems.map((item) => {
         const isActive = pathname === item.url;

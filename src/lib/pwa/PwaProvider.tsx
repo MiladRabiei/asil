@@ -1,10 +1,10 @@
 'use client';
 
+import { NetworkStatusBanner } from '@/shared/UI/NetworkStatusBanner';
+import { ServiceWorkerUpdate } from '@/shared/UI/ServiceWorkerUpdate';
 import { useEffect } from 'react';
 import { usePwaLifecycle } from './lifecycle';
 import { useViewportKeyboard } from './useViewportKeyboard';
-import { NetworkStatusBanner } from '@/shared/UI/NetworkStatusBanner';
-import { ServiceWorkerUpdate } from '@/shared/UI/ServiceWorkerUpdate';
 
 /**
  * App-wide PWA composition point: registers the service worker unconditionally

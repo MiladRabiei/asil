@@ -27,12 +27,7 @@ export interface IChargingBranch {
   deviceCode?: string;
 }
 
-export type IChargingSessionStatus =
-  | 'STARTING'
-  | 'CHARGING'
-  | 'COMPLETED'
-  | 'FAILED'
-  | 'STOPPED';
+export type IChargingSessionStatus = 'STARTING' | 'CHARGING' | 'COMPLETED' | 'FAILED' | 'STOPPED';
 
 export interface IChargingSession {
   id: string;

@@ -34,7 +34,12 @@ function ScanFrameCorners() {
 export default function QrScanner({ videoRef, status, onStart }: QrScannerProps) {
   return (
     <div className="relative w-full aspect-[3/4] max-w-sm mx-auto overflow-hidden rounded-3xl bg-neutral-900">
-      <video ref={videoRef} className="absolute inset-0 h-full w-full object-cover" muted playsInline />
+      <video
+        ref={videoRef}
+        className="absolute inset-0 h-full w-full object-cover"
+        muted
+        playsInline
+      />
       <ScanFrameCorners />
 
       {status !== 'scanning' && (

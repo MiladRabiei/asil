@@ -8,7 +8,10 @@ export interface ResilientRequestOptions extends RequestInit {
 // and forwards an external abort signal (e.g. from a cancelled station
 // query) alongside the internal timeout one. Used by the station discovery
 // adapters (lib/stations) instead of a bare fetch.
-export async function resilientFetch(input: RequestInfo | URL, options: ResilientRequestOptions = {}) {
+export async function resilientFetch(
+  input: RequestInfo | URL,
+  options: ResilientRequestOptions = {}
+) {
   const { retries = 2, timeoutMs = 10_000, retryDelayMs = 500, signal, ...requestInit } = options;
   let lastError: unknown;
 
@@ -32,10 +35,13 @@ export async function resilientFetch(input: RequestInfo | URL, options: Resilien
       }
       if (attempt < retries) {
         await new Promise<void>((resolve, reject) => {
-          const delay = window.setTimeout(() => {
-            signal?.removeEventListener('abort', cancelDelay);
-            resolve();
-          }, retryDelayMs * 2 ** attempt);
+          const delay = window.setTimeout(
+            () => {
+              signal?.removeEventListener('abort', cancelDelay);
+              resolve();
+            },
+            retryDelayMs * 2 ** attempt
+          );
           const cancelDelay = () => {
             window.clearTimeout(delay);
             reject(new DOMException('The operation was aborted.', 'AbortError'));
@@ -52,7 +58,10 @@ export async function resilientFetch(input: RequestInfo | URL, options: Resilien
   throw lastError instanceof Error ? lastError : new Error('network_request_failed');
 }
 
-export async function resilientJson<T>(input: RequestInfo | URL, options?: ResilientRequestOptions): Promise<T> {
+export async function resilientJson<T>(
+  input: RequestInfo | URL,
+  options?: ResilientRequestOptions
+): Promise<T> {
   const response = await resilientFetch(input, options);
   return response.json() as Promise<T>;
 }

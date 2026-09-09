@@ -1,13 +1,6 @@
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { FlatCompat } from '@eslint/eslintrc';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
+import nextTypescript from 'eslint-config-next/typescript';
+import prettierRecommended from 'eslint-plugin-prettier/recommended';
 
 const eslintConfig = [
   {
@@ -22,16 +15,16 @@ const eslintConfig = [
     ],
   },
 
-  ...compat.extends(
-    'next/core-web-vitals',
-    'next/typescript',
-    'plugin:prettier/recommended',
-    'plugin:@typescript-eslint/recommended'
-  ),
+  ...nextCoreWebVitals,
+  ...nextTypescript,
+  prettierRecommended,
 
   {
     rules: {
       'prettier/prettier': ['error', { endOfLine: 'lf' }],
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/immutability': 'warn',
       '@typescript-eslint/ban-ts-comment': [
         'warn',
         {

@@ -67,7 +67,11 @@ export function ServiceWorkerUpdate() {
   return (
     <div className="fixed inset-x-4 bottom-[calc(1rem+var(--safe-bottom,0px))] z-[70] mx-auto flex max-w-md items-center justify-between gap-3 rounded-xl border bg-background p-4 shadow-lg">
       <p className="text-sm">نسخه جدید برنامه آماده است.</p>
-      <button type="button" onClick={apply} className="rounded-lg bg-foreground px-4 py-2 text-background">
+      <button
+        type="button"
+        onClick={apply}
+        className="rounded-lg bg-foreground px-4 py-2 text-background"
+      >
         به‌روزرسانی
       </button>
     </div>

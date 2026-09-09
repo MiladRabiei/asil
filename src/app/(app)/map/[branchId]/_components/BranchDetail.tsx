@@ -61,8 +61,8 @@ export default function BranchDetail({ branch }: { branch: IChargingBranch }) {
 
       {isOutOfService && (
         <div className="rounded-lg bg-error/10 p-sm text-xs text-error">
-          این ایستگاه در حال حاضر خارج از سرویس است. با فعال کردن زنگوله بالا، به محض
-          فعال شدن مجدد به شما اطلاع می‌دهیم.
+          این ایستگاه در حال حاضر خارج از سرویس است. با فعال کردن زنگوله بالا، به محض فعال شدن مجدد
+          به شما اطلاع می‌دهیم.
         </div>
       )}
 

@@ -9,7 +9,8 @@ export function usePwaLifecycle() {
   const queryClient = useQueryClient();
   useEffect(() => {
     const refresh = () => {
-      if (document.visibilityState === 'visible') void queryClient.refetchQueries({ type: 'active' });
+      if (document.visibilityState === 'visible')
+        void queryClient.refetchQueries({ type: 'active' });
     };
     window.addEventListener('pageshow', refresh);
     document.addEventListener('visibilitychange', refresh);

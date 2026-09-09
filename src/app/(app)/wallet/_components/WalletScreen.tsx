@@ -62,7 +62,9 @@ export default function WalletScreen() {
                     <p className="text-sm font-medium">{TX_LABEL[tx.type]}</p>
                     <p className="text-xs text-muted-foreground">{tx.description}</p>
                   </div>
-                  <span className={`text-sm font-semibold ${tx.amount < 0 ? 'text-error' : 'text-success'}`}>
+                  <span
+                    className={`text-sm font-semibold ${tx.amount < 0 ? 'text-error' : 'text-success'}`}
+                  >
                     {tx.amount < 0 ? '-' : '+'}
                     {formatToman(tx.amount)}
                   </span>

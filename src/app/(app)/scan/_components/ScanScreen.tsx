@@ -32,7 +32,9 @@ export default function ScanScreen() {
         <div className="flex-1 flex flex-col items-center justify-center gap-md p-lg text-center">
           <p className="text-lg font-semibold">{branch.name} شناسایی شد</p>
           <p className="text-sm text-white/60">{branch.address}</p>
-          {mismatched && <p className="text-sm text-amber-400">این کد مربوط به ایستگاه دیگری است.</p>}
+          {mismatched && (
+            <p className="text-sm text-amber-400">این کد مربوط به ایستگاه دیگری است.</p>
+          )}
           <div className="flex flex-col gap-sm w-full max-w-sm mt-md">
             <Link href={`/map/${branch.id}`}>
               <Button className="w-full gap-2">

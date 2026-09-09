@@ -9,10 +9,14 @@ async function wait(ms: number, signal?: AbortSignal): Promise<void> {
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   await new Promise<void>((resolve, reject) => {
     const timer = window.setTimeout(resolve, ms);
-    signal?.addEventListener('abort', () => {
-      window.clearTimeout(timer);
-      reject(new DOMException('Aborted', 'AbortError'));
-    }, { once: true });
+    signal?.addEventListener(
+      'abort',
+      () => {
+        window.clearTimeout(timer);
+        reject(new DOMException('Aborted', 'AbortError'));
+      },
+      { once: true }
+    );
   });
 }
 

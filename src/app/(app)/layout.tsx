@@ -9,13 +9,12 @@ import MobileBottomNav from '@/shared/layout/Navbar/MobileBottomNav';
 // since in this consumer app it wraps the whole logged-in experience, not
 // just a dashboard page.
 const AppShellLayout = ({ children }: { children: React.ReactNode }) => {
-  console.log('🔥 AppShellLayout rendered');
   // const { isAuthenticated } = useAuth();
   const { bottomNavItems } = useDashboardNav();
 
   return (
-    <div dir="rtl" className="w-full min-h-dvh">
-      {children}
+    <div dir="rtl" className="flex h-dvh w-full flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
       <MobileBottomNav items={bottomNavItems} isAuthenticated={true} userRoles={['USER']} />
     </div>
   );
