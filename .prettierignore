@@ -1,0 +1,11 @@
+# Ignore build output
+.next/
+out/
+dist/
+node_modules/
+
+# Ignore lock files
+package-lock.json
+
+# Ignore generated files
+coverage/

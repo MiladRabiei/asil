@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "Running Prettier..."
+npx pretty-quick --staged
+
+echo "Running full project build and lint check..."
+npm run build
+npx lint-staged
+
+# Check if the build or linting failed
+if [ $? -ne 0 ]; then
+  echo "❌ Build or linting failed. Commit aborted!"
+  exit 1
+fi
+
+echo "✅ Prettier, build, and lint passed. Proceeding with commit."

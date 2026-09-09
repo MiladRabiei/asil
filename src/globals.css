@@ -1,0 +1,727 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-gold: #ffb219;
+  --color-brand: #233d4c;
+
+  /* spacing */
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 2rem;
+  --spacing-standard-phone: 1rem;
+  --spacing-standard-tablet: 3rem;
+  --spacing-standard-laptop: 7rem;
+
+  /* font-size */
+  --text-xs: 0.75rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-heading: 2rem;
+  --leading-heading: 2.5rem;
+
+  /* screens */
+  --breakpoint-phone: 480px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-laptop: 1024px;
+  --breakpoint-desktop: 1280px;
+}
+
+/* =============================================
+   SHADCN + BRAND VARIABLES
+   ============================================= */
+:root {
+  /* iOS/Android safe-area + on-screen-keyboard insets — read by
+     lib/pwa/useViewportKeyboard.ts and any fixed-position UI (bottom nav,
+     install/update banners) that needs to sit above the home indicator or
+     an open keyboard. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --keyboard-inset: 0px;
+  --viewport-height: 100dvh;
+
+  --background: oklch(1 0 0);
+  --foreground: #12161b; /* Figma "text/primary" — confirmed from mobile+desktop phone-number & login-password screens */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.141 0.005 285.823);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+
+  /* brand colors */
+  --primary: #000000; /* matches Figma "black/black" — already aligned */
+  --primary-foreground: #ffffff; /* matches Figma "text/secondary" on dark surfaces — already aligned */
+  --secondary: #1a7bfe;
+  --secondary-foreground: #1f2933;
+  --accent: #f9c784;
+  --accent-foreground: #202224;
+
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: #8690a2; /* Figma icon/placeholder grey — confirmed from phone-number & OTP screens */
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.705 0.015 286.067);
+  --radius: 0.75rem;
+
+  /* semantic */
+  --success: #2fbf71;
+  --success-foreground: #020d00;
+  --warning: #f4b400;
+  --warning-foreground: #150d00;
+  --error: #e63946;
+  --error-foreground: #ffffff;
+  --info: #3fa9f5;
+  --info-foreground: #000a16;
+
+  /* Figma surface tokens — confirmed values pulled from the auth flow screens
+     this session. This file has many more variables (colors/*, spacing/*,
+     etc.) not yet extracted — the Figma MCP tool call limit was hit twice
+     trying to pull the full get_variable_defs list. Treat this block as a
+     verified start, not the complete design system yet. */
+  --surface-neutral: #f7f8fa; /* Figma "background/neutral" — input field fills */
+  --overlay-black-8: rgb(0 0 0 / 8%); /* Figma "black/black-8%" — secondary pill buttons */
+  --grey-900: #181818; /* Figma "colors/grey-900" — seen in status-bar chrome text */
+
+  /* surfaces */
+  --bg-main: #fafaf9;
+  --bg-card: #ffffff;
+  --bg-soft: #eef2f6;
+  --bg-nav: #ffffff;
+  --text-primary: #1f2933;
+  --text-secondary: #6b7280;
+  --border-color: #e2e8f0;
+  --border-primary: #e7e5e4;
+  --neutral-content: #67748e;
+
+  /* charts */
+  --chart-1: oklch(0.871 0.006 286.286);
+  --chart-2: oklch(0.552 0.016 285.938);
+  --chart-3: oklch(0.442 0.017 285.786);
+  --chart-4: oklch(0.37 0.013 285.805);
+  --chart-5: oklch(0.274 0.006 286.033);
+
+  /* sidebar */
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-primary: #000000;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.705 0.015 286.067);
+
+  /* iceberg */
+  --iceberg-400: #9da5b4; /* Figma "iceberg/400" — pull from Figma variable panel */
+  --iceberg-500: #8690a2; /* Figma "iceberg/500" — confirmed, currently used as muted-foreground */
+  --iceberg-700: #4b5362;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #e5e5e8;
+  --card: #162235;
+  --card-foreground: #e5e5e8;
+  --popover: #162235;
+  --popover-foreground: #e5e5e8;
+
+  /* brand colors dark */
+  --primary: #fd802e;
+  --primary-foreground: #ffffff;
+  --secondary: #233d4c;
+  --secondary-foreground: #ffffff;
+  --accent: #f9c784;
+  --accent-foreground: #0f172a;
+
+  --muted: #0b1324;
+  --muted-foreground: #4b5362;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #243447;
+  --input: #243447;
+  --ring: oklch(0.552 0.016 285.938);
+
+  /* Figma surface tokens, dark — INFERRED, not from Figma (the file has no
+     dark-mode frames). Swap these once/if a dark variant is designed. */
+  --surface-neutral: #1e293b;
+  --overlay-black-8: rgb(255 255 255 / 8%);
+  --grey-900: #e5e5e8;
+
+  /* surfaces */
+  --bg-main: #0f172a;
+  --bg-card: #162235;
+  --bg-soft: #1e293b;
+  --bg-nav: #0f172a;
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --border-color: #243447;
+  --border-primary: #fff7ed;
+  --neutral-content: #e5e5e8;
+
+  /* charts */
+  --chart-1: oklch(0.871 0.006 286.286);
+  --chart-2: oklch(0.552 0.016 285.938);
+  --chart-3: oklch(0.442 0.017 285.786);
+  --chart-4: oklch(0.37 0.013 285.805);
+  --chart-5: oklch(0.274 0.006 286.033);
+
+  /* sidebar */
+  --sidebar: #162235;
+  --sidebar-foreground: #e5e5e8;
+  --sidebar-primary: #fd802e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #0b1324;
+  --sidebar-accent-foreground: #e5e5e8;
+  --sidebar-border: #243447;
+  --sidebar-ring: oklch(0.552 0.016 285.938);
+}
+
+/* =============================================
+   THEME INLINE — maps CSS vars to Tailwind
+   ============================================= */
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Figma surface tokens */
+  --color-surface-neutral: var(--surface-neutral);
+  --color-overlay-black-8: var(--overlay-black-8);
+  --color-grey-900: var(--grey-900);
+
+  /* semantic */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-error: var(--error);
+  --color-error-foreground: var(--error-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  /* custom */
+  --color-gold: var(--color-gold);
+  --color-brand: var(--color-brand);
+  --color-neutral-content: var(--neutral-content);
+
+  /* charts */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* radius */
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 5px;
+  /* --radius-xl: calc(var(--radius) * 1.4); */
+  /* --radius-2xl: calc(var(--radius) * 1.8); */
+
+  /* iceberg */
+  --color-iceberg-400: var(--iceberg-400);
+  --color-iceberg-500: var(--iceberg-500);
+  --color-iceberg-700: var(--iceberg-700);
+}
+
+/* =============================================
+   UTILITIES
+   ============================================= */
+@utility border-sm {
+  @apply border;
+}
+@utility border-md {
+  @apply border-[3px];
+}
+@utility border-lg {
+  @apply border-[5px];
+}
+
+/* =============================================
+   BASE STYLES
+   ============================================= */
+#root {
+  width: 100vw;
+  min-height: 100vh;
+}
+
+* {
+  @apply border-border outline-ring/50;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  font-family: 'Bonyade Koodak', 'yekanbakhregular', sans-serif;
+  @apply bg-background text-foreground;
+}
+
+button:not(:disabled),
+[role='button']:not(:disabled) {
+  cursor: pointer;
+}
+
+main {
+  @apply flex flex-grow;
+}
+
+/* =============================================
+   GLOBAL UTILITY CLASSES
+   ============================================= */
+.standard-horizontal-padding {
+  @apply px-standard-phone md:px-standard-tablet lg:px-standard-laptop;
+}
+
+.custom-label-text {
+  @apply text-neutral-content cursor-pointer;
+}
+
+.custom-error-message {
+  @apply text-error text-xs font-bold;
+}
+
+.bg-gradient {
+  @apply bg-gradient-to-br from-primary/30 via-accent/20 to-secondary/30;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* =============================================
+   FONTS
+   ============================================= */
+
+@font-face {
+  font-family: 'Bonyade Koodak';
+  font-style: normal;
+  font-weight: 100;
+  font-display: swap;
+  src: url('/fonts/bonyadekoodak/BonyadeKoodak-Thin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Bonyade Koodak';
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url('/fonts/bonyadekoodak/BonyadeKoodak-ExtraLight.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Bonyade Koodak';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/fonts/bonyadekoodak/BonyadeKoodak-Light.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Bonyade Koodak';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/bonyadekoodak/BonyadeKoodak-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Bonyade Koodak';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/bonyadekoodak/BonyadeKoodak-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Bonyade Koodak';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/bonyadekoodak/BonyadeKoodak-Bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Bonyade Koodak';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/bonyadekoodak/BonyadeKoodak-ExtraBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Bonyade Koodak';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('/fonts/bonyadekoodak/BonyadeKoodak-Black.woff2') format('woff2');
+}
+@font-face {
+  font-family: yekanbakhregular;
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/yekanbakhregular/7296ae79f6faca68798b00fbbbee4c22.eot');
+  src:
+    url('/fonts/yekanbakhregular/7296ae79f6faca68798b00fbbbee4c22.eot') format('embedded-opentype'),
+    url('/fonts/yekanbakhregular/7296ae79f6faca68798b00fbbbee4c22.woff2') format('woff2'),
+    url('/fonts/yekanbakhregular/7296ae79f6faca68798b00fbbbee4c22.woff') format('woff'),
+    url('/fonts/yekanbakhregular/7296ae79f6faca68798b00fbbbee4c22.ttf') format('truetype');
+}
+/* Overrides for react-multi-date-picker's <Calendar />, mapped to our design tokens
+   instead of the library's built-in purple.css theme. */
+.rmdp-wrapper {
+  background-color: var(--background);
+  box-shadow: none !important;
+  border: none !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 auto;
+  padding: 0 !important;
+  direction: rtl;
+}
+
+.rmdp-wrapper.rmdp-shadow {
+  box-shadow: none !important;
+}
+
+.rmdp-wrapper.rmdp-border {
+  border: none !important;
+}
+
+/* =========================================================
+   MAIN CALENDAR
+   ========================================================= */
+
+.rmdp-top-class {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 auto;
+}
+
+.rmdp-calendar {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 auto;
+  padding: 0 !important;
+  border: none !important;
+  position: relative;
+}
+
+/* =========================================================
+   CALENDAR HEADER
+   ========================================================= */
+
+.rmdp-header {
+  width: 100%;
+  padding: 0 0 12px !important;
+}
+
+.rmdp-header-values {
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Previous / next arrows */
+.rmdp-arrow-container {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: transparent;
+  box-shadow: none !important;
+}
+
+.rmdp-arrow-container:hover {
+  background-color: var(--muted);
+  box-shadow: none !important;
+}
+
+.rmdp-arrow {
+  border-color: var(--muted-foreground);
+}
+
+.rmdp-arrow-container:hover .rmdp-arrow {
+  border-color: var(--foreground);
+}
+
+/* =========================================================
+   NORMAL DAY CALENDAR
+   ========================================================= */
+
+.rmdp-day-picker {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Each normal calendar week */
+.rmdp-day-picker .rmdp-week {
+  display: flex !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  justify-content: space-between;
+}
+
+/* Weekday names */
+.rmdp-day-picker .rmdp-week-day {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 500;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Individual normal calendar days */
+.rmdp-day-picker .rmdp-day {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Day number */
+.rmdp-day-picker .rmdp-day span {
+  color: var(--foreground);
+  font-size: 0.875rem;
+  box-shadow: none !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+}
+
+/* Hover */
+.rmdp-day-picker .rmdp-day:not(.rmdp-disabled):not(.rmdp-day-hidden) span:hover {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+/* Today */
+.rmdp-day-picker .rmdp-day.rmdp-today span {
+  border-radius: 100%;
+  box-shadow: none !important;
+}
+
+/* Selected */
+.rmdp-day-picker .rmdp-day.rmdp-selected span:not(.highlight) {
+  box-shadow: none !important;
+}
+
+/* Disabled */
+.rmdp-day-picker .rmdp-day.rmdp-deactive,
+.rmdp-day-picker .rmdp-day.rmdp-disabled {
+  color: color-mix(in srgb, var(--muted-foreground) 50%, transparent);
+}
+
+/* =========================================================
+   MONTH / YEAR PICKER
+   ========================================================= */
+
+.rmdp-month-picker,
+.rmdp-year-picker {
+  position: absolute;
+  inset: 0;
+
+  width: 100% !important;
+  max-width: none !important;
+
+  background-color: var(--background);
+  border-radius: 0;
+  box-shadow: none !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Keep the library's picker layout intact */
+.rmdp-month-picker .rmdp-day,
+.rmdp-year-picker .rmdp-day {
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Picker values */
+.rmdp-month-picker .rmdp-day span,
+.rmdp-year-picker .rmdp-day span {
+  border-radius: 0.5rem;
+  padding: 10px 0;
+  box-shadow: none !important;
+}
+
+/* Selected month/year */
+.rmdp-month-picker .rmdp-day.rmdp-selected span,
+.rmdp-year-picker .rmdp-day.rmdp-selected span {
+  background-color: var(--primary);
+  color: white;
+  box-shadow: none !important;
+}
+
+/* =========================================================
+   YEAR PICKER ONLY
+   ========================================================= */
+
+/*
+ * Do NOT turn .rmdp-year-picker into flex.
+ * react-multi-date-picker already controls its internal grid.
+ */
+
+.rmdp-year-picker {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* Don't let the normal calendar flex rules affect years */
+.rmdp-year-picker .rmdp-day {
+  flex: initial !important;
+  min-width: initial !important;
+  max-width: initial !important;
+}
+
+/* Year value */
+.rmdp-year-picker .rmdp-day span {
+  width: auto !important;
+  height: auto !important;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 16px !important;
+
+  border-radius: 0.5rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+
+  box-shadow: none !important;
+}
+
+/* Year hover */
+.rmdp-year-picker .rmdp-day:not(.rmdp-disabled):not(.rmdp-day-hidden) span:hover {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+/* Selected year */
+.rmdp-year-picker .rmdp-day.rmdp-selected span {
+  background-color: var(--primary);
+  color: white;
+  box-shadow: none !important;
+}
+
+/* =========================================================
+   EXTRA WIDTH OVERRIDES
+   ========================================================= */
+
+.rmdp-container {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.rmdp-wrapper > div {
+  max-width: none !important;
+}
+
+.rmdp-calendar > div {
+  max-width: none !important;
+}
+
+/* Prevent unwanted spacing */
+.rmdp-week,
+.rmdp-day-picker,
+.rmdp-calendar {
+  box-sizing: border-box;
+}
+
+/* RTL */
+.rmdp-wrapper,
+.rmdp-calendar {
+  direction: rtl;
+}
+/* scrollbar hide */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+/* Thin custom scrollbar - Webkit (Chrome, Safari, Edge) */
+.scrollbar-custom::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: #d1d5db; /* gray-300 */
+  border-radius: 9999px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af; /* gray-400 */
+}
+
+/* Firefox */
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
