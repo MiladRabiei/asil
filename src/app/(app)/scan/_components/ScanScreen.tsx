@@ -6,9 +6,9 @@ import { MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useQrScanner } from '../_hooks/useQrScanner';
 import ManualCodeEntry from './ManualCodeEntry';
 import QrScanner from './QrScanner';
-import { useQrScanner } from '../_hooks/useQrScanner';
 
 export default function ScanScreen() {
   const searchParams = useSearchParams();
@@ -25,7 +25,7 @@ export default function ScanScreen() {
   }, [status]);
 
   if (status === 'success' && branch) {
-    const mismatched = Boolean(expectedBranchId) && branch.id !== expectedBranchId;
+    const mismatched = Boolean(expectedBranchId) && String(branch.id) !== expectedBranchId;
     return (
       <section className="w-full min-h-dvh flex flex-col bg-neutral-950 text-white">
         <AppTopBar eyebrow="Scan" className="text-white" />
@@ -36,12 +36,14 @@ export default function ScanScreen() {
             <p className="text-sm text-amber-400">این کد مربوط به ایستگاه دیگری است.</p>
           )}
           <div className="flex flex-col gap-sm w-full max-w-sm mt-md">
-            <Link href={`/map/${branch.id}`}>
-              <Button className="w-full gap-2">
-                <MapPin className="size-4" />
-                مشاهده ایستگاه و شروع شارژ
-              </Button>
-            </Link>
+            {!mismatched && (
+              <Link href={`/map/${branch.id}`}>
+                <Button className="w-full gap-2">
+                  <MapPin className="size-4" />
+                  مشاهده ایستگاه و شروع شارژ
+                </Button>
+              </Link>
+            )}
             <Button variant="outline" className="w-full text-white" onClick={reset}>
               اسکن مجدد
             </Button>

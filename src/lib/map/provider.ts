@@ -7,6 +7,9 @@ import type { IMapBounds, IMapPosition } from '@/shared/_service/interface.map';
  */
 export interface IMapProviderAdapter {
   readonly id: string;
+  /** Hand off to the provider's location/place UI without starting a route. */
+  openLocation?: (position: IMapPosition) => boolean;
+  /** Optional provider-owned routing handoff for future use. */
   openNavigation?: (destination: IMapPosition, origin?: IMapPosition) => boolean;
 }
 

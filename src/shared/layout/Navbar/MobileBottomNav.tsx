@@ -26,7 +26,6 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     }
     return true;
   });
-  console.log(visibleItems);
   return (
     <nav
       dir="ltr"

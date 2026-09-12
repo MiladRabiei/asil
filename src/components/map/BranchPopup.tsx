@@ -1,6 +1,6 @@
 'use client';
 
-import { openNeshanNavigation } from '@/lib/map';
+import { openNeshanLocation } from '@/lib/map';
 import type { IChargingBranch } from '@/shared/_service/interface.ev';
 import { MapPin, Navigation, PlugZap, X } from 'lucide-react';
 import Link from 'next/link';
@@ -70,7 +70,7 @@ export default function BranchPopup({ branch, onClose }: BranchPopupProps) {
       <div className="mt-3 flex gap-2">
         <button
           type="button"
-          onClick={() => openNeshanNavigation(branch.position)}
+          onClick={() => openNeshanLocation(branch.position)}
           disabled={branch.status === 'OUT_OF_SERVICE'}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-40"
         >

@@ -41,6 +41,38 @@ export async function readCache<T>(key: string): Promise<CacheRecord<T> | null> 
   }
 }
 
+export async function pruneCache(
+  keyPrefix: string,
+  options: { maxEntries: number; maxAgeMs: number }
+): Promise<void> {
+  try {
+    const db = await openDb();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const now = Date.now();
+        const records = (request.result as CacheRecord<unknown>[])
+          .filter((record) => record.key.startsWith(keyPrefix))
+          .sort((a, b) => b.updatedAt - a.updatedAt);
+
+        for (const record of records) {
+          const expired = now - record.updatedAt > options.maxAgeMs;
+          const beyondLimit = records.indexOf(record) >= options.maxEntries;
+          if (expired || beyondLimit) store.delete(record.key);
+        }
+      };
+      request.onerror = () => reject(request.error);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  } catch {
+    /* persistence is optional */
+  }
+}
+
 export async function writeCache<T>(key: string, value: T): Promise<void> {
   try {
     const db = await openDb();

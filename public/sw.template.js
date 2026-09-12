@@ -29,17 +29,23 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      const keep = new Set([SHELL_CACHE, RUNTIME_CACHE]);
       const keys = await caches.keys();
-      await Promise.all(keys.filter((key) => !keep.has(key)).map((key) => caches.delete(key)));
+      await Promise.all(
+        keys
+          .filter(
+            (key) =>
+              (key.startsWith('app-shell-') || key.startsWith('app-runtime-')) &&
+              ![SHELL_CACHE, RUNTIME_CACHE].includes(key)
+          )
+          .map((key) => caches.delete(key))
+      );
       await self.clients.claim();
     })()
   );
 });
 
-// Lets the page force an already-waiting SW to activate immediately, once
-// the user accepts the "update available" banner (see
-// shared/UI/ServiceWorkerUpdate).
+// Lets the page automatically activate an already-waiting SW.
+// ServiceWorkerUpdate sends this message after a new worker is installed.
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });

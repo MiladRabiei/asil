@@ -2,9 +2,13 @@
 
 import { mapConfig } from '@/config/map.config';
 import { useUserLocation } from '@/lib/geolocation';
-import { useNearbyStations, useViewportStations } from '@/shared/_service/hook.query';
+import { useNearbyStations, useViewportStations } from '@/lib/stations';
 import type { IChargingBranch } from '@/shared/_service/interface.ev';
-import type { IMapBounds, IMapMarker } from '@/shared/_service/interface.map';
+import type {
+  IMapBounds,
+  IMapMarker,
+  IViewportStationQuery,
+} from '@/shared/_service/interface.map';
 import { useCallback, useMemo, useState } from 'react';
 import BranchPopup from './BranchPopup';
 import { NeshanMap } from './Map';
@@ -36,7 +40,7 @@ export default function BranchMap() {
   } = useUserLocation();
   const { data: nearbyBranches, loading: loadingNearby, offline } = useNearbyStations(position);
 
-  const [viewport, setViewport] = useState<IMapBounds | null>(null);
+  const [viewport, setViewport] = useState<IViewportStationQuery | null>(null);
   const { data: viewportBranches, loading: loadingViewport } = useViewportStations(viewport);
 
   const branches = useMemo(() => {
@@ -46,7 +50,9 @@ export default function BranchMap() {
     return [...byId.values()];
   }, [nearbyBranches, viewportBranches]);
 
-  const onViewportChange = useCallback((bounds: IMapBounds) => setViewport(bounds), []);
+  const onViewportChange = useCallback((bounds: IMapBounds, zoom: number) => {
+    setViewport({ ...bounds, zoom });
+  }, []);
 
   const markers: IMapMarker[] = branches.map((branch) => ({
     id: branch.id,

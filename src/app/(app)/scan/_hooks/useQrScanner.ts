@@ -2,8 +2,8 @@
 
 import { lookupBranchByCode } from '@/shared/_service/ev.service';
 import type { IChargingBranch } from '@/shared/_service/interface.ev';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import QrScannerLib from 'qr-scanner';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Uses the `qr-scanner` npm package rather than a Barcode-Detection-API
 // based scanner (e.g. @yudiel/react-qr-scanner): it decodes on a Web Worker
@@ -16,20 +16,28 @@ export function useQrScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRef = useRef<QrScannerLib | null>(null);
   const lastScanned = useRef<string | null>(null);
+  const requestId = useRef(0);
+  const mountedRef = useRef(true);
   const [status, setStatus] = useState<QrScannerStatus>('idle');
   const [branch, setBranch] = useState<IChargingBranch | null>(null);
   const [error, setError] = useState('');
 
   const resolveCode = useCallback(async (rawValue: string) => {
-    if (!rawValue || rawValue === lastScanned.current) return; // ignore duplicate frames
-    lastScanned.current = rawValue;
+    const code = rawValue.trim();
+    if (!code || code === lastScanned.current) return;
+    lastScanned.current = code;
+    const currentRequest = ++requestId.current;
     scannerRef.current?.stop();
     setStatus('resolving');
+    setError('');
     try {
-      const result = await lookupBranchByCode(rawValue);
+      const result = await lookupBranchByCode(code);
+      if (!mountedRef.current || currentRequest !== requestId.current) return;
       setBranch(result);
       setStatus('success');
     } catch {
+      if (!mountedRef.current || currentRequest !== requestId.current) return;
+      lastScanned.current = null;
       setError('کد شناسایی نشد. دوباره تلاش کنید.');
       setStatus('error');
     }
@@ -40,6 +48,7 @@ export function useQrScanner() {
   // requesting camera permission on mount is a common source of surprise/
   // rejected-permission prompts, worse on iOS.
   useEffect(() => {
+    mountedRef.current = true;
     if (!videoRef.current) return;
     const scanner = new QrScannerLib(
       videoRef.current,
@@ -48,6 +57,8 @@ export function useQrScanner() {
     );
     scannerRef.current = scanner;
     return () => {
+      mountedRef.current = false;
+      requestId.current += 1;
       scanner.stop();
       scanner.destroy();
       scannerRef.current = null;
@@ -72,6 +83,7 @@ export function useQrScanner() {
   }, []);
 
   const reset = useCallback(() => {
+    requestId.current += 1;
     scannerRef.current?.stop();
     lastScanned.current = null;
     setBranch(null);

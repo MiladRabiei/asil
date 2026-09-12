@@ -1,6 +1,7 @@
 # Asil — EV Charging PWA
 
 Built from the B2B boilerplate (`mother-react-repo`), merging:
+
 1. The PWA layer ported from the exchange-confirmation app.
 2. A separate infra-focused EV PWA spike ("v5") — map/offline/PWA-lifecycle
    architecture were meaningfully more correct there and were adopted here.
@@ -30,7 +31,7 @@ App name is **"Asil"** (matches the reference product screenshot). Keep
   flow), foreground refetch on `visibilitychange`/`pageshow`,
   on-screen-keyboard inset tracking, network-status banner. Icons in
   `public/icons` are placeholders.
-- **Map**: `src/components/map` — Neshan's *official* OpenLayers SDK
+- **Map**: `src/components/map` — Neshan's _official_ OpenLayers SDK
   (`@neshan-maps-platform/react-openlayers`), not a generic Leaflet tile
   hack. Supports POI/traffic layers, viewport-bounds emission on `moveend`,
   portal-based popups, and a live user-position marker (with accuracy
@@ -47,14 +48,14 @@ App name is **"Asil"** (matches the reference product screenshot). Keep
   - **viewport** — map bounds, takes over once the user pans/zooms away
     from their own position, so browsing stations elsewhere (planning a
     trip to another city) actually shows something.
-  Results from both are merged (deduped by id) into one marker set. A
-  national charging network can have thousands of stations — this is why
-  neither mode ever fetches "all stations." Viewport queries are quantized
-  to a coarse grid (+ zoom) so panning slightly doesn't re-fetch. Both are
-  persisted to IndexedDB (`src/lib/offline`) for offline/reload support, with
-  a 5-minute staleness window. Mock discovery adapters
-  (`src/lib/stations/mock.ts`) make the map fully functional today without a
-  backend — see `NEXT_PUBLIC_USE_MOCK_EV_DATA` in `.env.example`.
+    Results from both are merged (deduped by id) into one marker set. A
+    national charging network can have thousands of stations — this is why
+    neither mode ever fetches "all stations." Viewport queries are quantized
+    to a coarse grid (+ zoom) so panning slightly doesn't re-fetch. Both are
+    persisted to IndexedDB (`src/lib/offline`) for offline/reload support, with
+    a 5-minute staleness window. Mock discovery adapters
+    (`src/lib/stations/mock.ts`) make the map fully functional today without a
+    backend — see `NEXT_PUBLIC_USE_MOCK_EV_DATA` in `.env.example`.
 - **Screens** (`src/app/(app)/`): Home (quick actions + nearby list), Map
   (full-screen branch map), Branch detail (availability, out-of-service
   state, notify-me bell, navigate button), Scan (camera + manual code
@@ -74,30 +75,116 @@ App name is **"Asil"** (matches the reference product screenshot). Keep
 
 ### Station query architecture
 
-Station discovery follows the project's `hook.query.tsx` convention rather
-than a second, parallel data-fetching system. **React Query owns request
-lifecycle, deduplication, retries, cancellation (via `queryFn`'s `signal`),
-and in-memory cache.** `src/lib/stations/{nearby,viewport,discovery,mock}.ts`
-are infrastructure-only — they translate a provider/backend contract into
-plain async functions and own zero React state. IndexedDB
-(`src/lib/offline`) is the persistence layer for reload/offline support,
-read/written from inside the query functions.
+`src/shared/_service/hook.query.tsx` is intentionally restricted to **GET
+query definitions**. It must not own React state/effects, browser event
+listeners, GPS movement logic, or UI orchestration.
 
-Two domain-specific rules live in the query hooks, not in React Query
-itself:
-- **Nearby** — the query anchor only changes once the device has moved past
-  a configured threshold (`useNearbyStations`'s `movementThresholdMeters`),
-  so GPS jitter doesn't create a new request every few meters.
-- **Viewport** — the query key is the quantized viewport cell + zoom
-  (`viewportCacheKey`), so panning slightly doesn't re-fetch, but a
-  meaningfully different zoom level does.
+The current split is:
 
-Queries use `networkMode: 'always'` deliberately — React Query's default
-(`'online'`) would skip the `queryFn` entirely while offline, which would
-mean the IndexedDB cache read inside it never runs. `retry: false` at the
-React Query level is also deliberate: the discovery adapters' own
-`resilientFetch` already retries transient failures with backoff, so
-React Query retrying on top would compound delays.
+- `hook.query.tsx`
+  - `useGetCurrentUser`
+  - `useGetBranch`
+  - `useGetWallet`
+  - `useNearbyStationsQuery`
+  - `useViewportStationsQuery`
+  - React Query keys/options/query functions only.
+- `src/lib/stations/useNearbyStations.ts`
+  - owns the 3 km GPS movement anchor rule;
+  - composes the nearby GET query;
+  - exposes UI-friendly loading/offline metadata.
+- `src/lib/stations/useViewportStations.ts`
+  - composes the viewport GET query;
+  - exposes UI-friendly loading/offline metadata.
+- `src/lib/stations/cachedDiscovery.ts`
+  - owns the network -> IndexedDB fallback;
+  - never treats cached station data as authoritative live charging state.
+- `src/lib/stations/{nearby,viewport,discovery,mock}.ts`
+  - provider/backend adapters only; no React state.
+- `src/lib/offline`
+  - IndexedDB persistence only.
+
+React Query owns request lifecycle, deduplication, in-memory caching and
+cancellation through `queryFn`'s `signal`. The discovery adapters already
+perform bounded network retries, so React Query retries remain disabled for
+station discovery to avoid compounded retry delays.
+
+The nearby query key uses a normalized three-decimal GPS anchor. The anchor
+only advances after the device moves at least 3 km, which prevents GPS jitter
+from generating a request for every location update.
+
+Viewport queries use `viewportCacheKey`, which quantizes the map bounds to a
+coarse grid and includes the current zoom. `NeshanMap` emits both bounds and zoom
+on `moveend`, and `BranchMap` carries both values into the viewport query. Small
+pans therefore reuse the same query/cache entry while meaningful viewport or zoom
+changes fetch new data.
+
+### Offline data policy
+
+There are **two separate caching concerns**:
+
+1. **PWA shell/static assets** — cached by the service worker so the app can
+   start offline.
+2. **Station discovery data** — persisted in IndexedDB so previously visited
+   map areas can be displayed after reload/offline.
+
+The following are **never used as offline truth**:
+
+- wallet balance;
+- charging session state;
+- payment/top-up state;
+- authentication/OTP state;
+- live connector availability.
+
+Station cache is bounded to 100 records and retained for up to 24 hours.
+React Query considers station data stale after 5 minutes. The 5-minute value is
+a freshness policy, not permission to delete the persisted record immediately:
+an older station snapshot can still be shown offline with an explicit stale
+state.
+
+`navigator.onLine` is UI information only. A real station request still
+attempts the backend and falls back to IndexedDB on failure, which is important
+when the device reports "online" but the backend or internet path is actually
+unreachable.
+
+### Neshan handoff contract
+
+Asil does **not** calculate or own turn-by-turn navigation.
+
+When the user taps the station navigation action:
+
+1. Asil validates the selected station coordinates.
+2. Asil hands the point to Neshan using the point/location URL.
+3. Asil does **not** request current GPS for this action.
+4. Neshan owns the place UI and its own `مسیریابی` action.
+5. The user may navigate inside Neshan or return to Asil.
+
+`openNeshanNavigation(destination, origin)` remains in the provider adapter only
+for a future provider-owned routing requirement; the current station UI uses
+`openNeshanLocation`.
+
+### PWA update lifecycle
+
+The service worker is generated after `next build` using `.next/BUILD_ID`.
+That build ID becomes the cache version. `PwaProvider` registers the worker with
+`updateViaCache: 'none'`, and the update component can activate a waiting worker
+after explicit user confirmation.
+
+Required regression scenario:
+
+- install version A;
+- deploy version B;
+- do **not** clear site data;
+- reload/open the existing PWA;
+- version B's worker must be discovered and become active;
+- old shell/runtime caches must be deleted;
+- the app must load version B.
+
+This must be tested in a real browser/standalone PWA before calling the PWA
+update path production-ready.
+
+Important implementation detail: the service worker **does not call `skipWaiting()`
+during `install`**. A newly installed worker remains waiting until the application
+explicitly sends `SKIP_WAITING` after the user accepts the update.
 
 ## Placeholder screens (no design yet)
 
@@ -135,8 +222,8 @@ at the top of the file. The rule for these:
 - **Wallet top-up** button is a stub — no payment gateway wired in.
 - **Push mock backend** (`src/app/api/v1/push/client/*`) is in-memory only —
   delete once a real backend ships these routes.
-- **iOS Neshan routing deep link** (`neshan://?destination=...`) is
-  unconfirmed by official docs — verify on a real device.
+- **iOS Neshan point handoff** (`neshan://?ll=...`) is unconfirmed by
+  official docs — verify the installed-app and no-app cases on a real device.
 - Marker/manifest icons are placeholder art, not final.
 - See "Placeholder screens" above for Wallet/Account/branch-popup/detail.
 
@@ -145,6 +232,7 @@ at the top of the file. The rule for these:
 Confirm these with the backend before replacing any mock:
 
 **Already assumed by the frontend (confirm these match):**
+
 - Viewport discovery accepts `north/south/east/west` (+ optional `zoom`).
 - Nearby discovery accepts `lat/lng` + `radiusMeters`.
 - Navigation is a hand-off to the Neshan app/website; turn-by-turn
@@ -156,6 +244,7 @@ Confirm these with the backend before replacing any mock:
   belongs on the branch-detail/session screens, not the map response.
 
 **Pending backend confirmation:**
+
 - Branch summary/list response shape, pagination/viewport result limits.
 - Branch detail response and connector schema.
 - Live availability/status update frequency and authoritative status values.
@@ -163,17 +252,79 @@ Confirm these with the backend before replacing any mock:
 - Wallet top-up/payment creation and verification flow.
 - Push subscription/topic API and server-side notification ownership.
 
+## Engineering & QA checklist
+
+### Completed in this pass
+
+- [x] `hook.query.tsx` contains GET query definitions only.
+- [x] Nearby GPS movement state moved out of the query-definition layer.
+- [x] Station cache fallback moved out of `hook.query.tsx`.
+- [x] Nearby and viewport discovery remain separate and are merged on the map.
+- [x] Station IndexedDB retention is bounded (100 records / 24 hours).
+- [x] Neshan station actions no longer request current GPS before handoff.
+- [x] Neshan point handoff is separated from provider-owned routing.
+- [x] Invalid Neshan coordinates are rejected before handoff.
+- [x] Offline station reads do not depend on React Query's default online
+      network mode.
+- [x] Service-worker install no longer self-activates; update activation is
+      reserved for explicit `SKIP_WAITING` messages.
+- [x] Viewport zoom is carried from `NeshanMap` into the viewport query/cache key.
+- [x] Removed the dead `useGetBranches` query and its unused list-route/mock function.
+- [x] Removed stray production `console.log` calls.
+- [x] Wallet/charging/auth data remain outside the station offline cache.
+
+### Must be verified with a browser/device
+
+- [ ] Offline reload shows the previously cached map/stations.
+- [ ] Online -> offline -> online transitions recover without a manual reload.
+- [ ] Backend unavailable while `navigator.onLine === true` falls back to station
+      cache.
+- [ ] GPS permission denied still allows manual map browsing via viewport queries.
+- [ ] GPS jitter below 3 km does not trigger nearby requests.
+- [ ] A movement of >= 3 km changes the nearby query anchor.
+- [ ] Rapid pan/zoom cancels obsolete viewport requests.
+- [ ] Duplicate stations from nearby + viewport render once.
+- [ ] Empty, malformed and unexpectedly large station responses are handled.
+- [ ] Neshan handoff works on Android with Neshan installed.
+- [ ] Neshan handoff degrades correctly when Neshan is not installed.
+- [ ] Neshan handoff works on iOS with the installed app.
+- [ ] Desktop/web Neshan point handoff works.
+- [x] Asil does not request GPS when the Neshan button is tapped.
+- [ ] Neshan's own place UI exposes its own routing action as expected.
+- [ ] PWA version A -> B updates without clearing storage/site data (code path fixed; runtime verification still required).
+- [ ] Waiting service worker activation reloads the page exactly once.
+- [ ] Failed service-worker installation does not block application startup.
+- [ ] Multiple tabs do not leave stale workers/caches unexpectedly active.
+- [ ] Standalone PWA behaves the same as browser mode for map/cache/update flows.
+- [ ] `npm run typecheck` passes.
+- [ ] `npm run lint` passes.
+- [ ] `npm run build` passes.
+- [ ] Production build has all mock flags explicitly configured.
+
+### Production blockers
+
+- [ ] Confirm the real GraphQL schema and replace REST GET adapters without
+      inventing field/envelope names.
+- [ ] Confirm authoritative live charging-status semantics.
+- [ ] Wire charging start/stop and verify asynchronous state transitions.
+- [ ] Wire wallet top-up/payment flow.
+- [ ] Replace push mock routes with the production push API.
+- [ ] Replace placeholder icons and placeholder presentation.
+- [ ] Perform real-device Neshan smoke tests for Android/iOS/PWA.
+- [ ] Perform a controlled service-worker A -> B deployment test without
+      clearing browser storage.
+
 ## Changelog
 
 Condensed history of the review/refactor passes this project has been
 through, newest first. Kept here instead of separate per-pass notes files
 so it doesn't go stale.
 
-- **Consolidated station discovery onto React Query** — was previously a
-  hand-rolled parallel hook (`lib/stations/hooks.ts`, manual request-id refs
-  and `AbortController` management) duplicating what React Query already
-  does. Moved into `hook.query.tsx` (see "Station query architecture"
-  above); `lib/stations/hooks.ts` deleted.
+- **Separated GET definitions from station orchestration** — React Query GET
+  definitions remain in `hook.query.tsx`, while GPS anchor state, network UI
+  state and cache fallback live under `lib/stations`. This restores the
+  project's `hook.query.tsx` convention without losing React Query lifecycle
+  management.
 - **Fixed a real compile error**: `useViewportStations` referenced
   `IViewportStationQuery` without importing it.
 - **Restored viewport-based map browsing.** An interim pass made the main

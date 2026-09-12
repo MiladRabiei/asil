@@ -1,10 +1,9 @@
 'use client';
 
-import { useCurrentLocation } from '@/lib/geolocation';
-import { openNeshanNavigation } from '@/lib/map';
-import { NotificationBellToggle } from '@/shared/UI/NotificationBellToggle';
+import { openNeshanLocation } from '@/lib/map';
 import Button from '@/shared/UI/Button';
 import DetailRow from '@/shared/UI/DetailRow';
+import { NotificationBellToggle } from '@/shared/UI/NotificationBellToggle';
 import type { IChargingBranch, IConnectorStatus } from '@/shared/_service/interface.ev';
 import { NavigationIcon, QrCode } from 'lucide-react';
 import Link from 'next/link';
@@ -33,14 +32,10 @@ const CONNECTOR_STATUS_LABEL: Record<IConnectorStatus, string> = {
 // app's design tokens, safe to restyle without touching `branch` or the
 // data-fetching container (BranchDetailContainer.tsx).
 export default function BranchDetail({ branch }: { branch: IChargingBranch }) {
-  const { position: myPosition, getLocation } = useCurrentLocation();
   const isOutOfService = branch.status === 'OUT_OF_SERVICE';
 
   const handleNavigate = () => {
-    // Best-effort — falls back to a destination-only link if location isn't
-    // available yet/permission wasn't granted.
-    if (!myPosition) getLocation();
-    openNeshanNavigation(branch.position, myPosition ?? undefined);
+    openNeshanLocation(branch.position);
   };
 
   return (

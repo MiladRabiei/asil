@@ -27,7 +27,6 @@ const PUSH_UPDATE_TOPICS_ROUTE = `${API_VERSION}/${APP_PUSH}/topics/`; // PROPOS
 
 // EV-domain routes — STUBS, paths are guesses pending backend confirmation.
 const APP_EV = 'ev/client';
-const BRANCHES_LIST_ROUTE = `${API_VERSION}/${APP_EV}/branches/`;
 const BRANCH_DETAIL_ROUTE = (branchId: string) => `${API_VERSION}/${APP_EV}/branches/${branchId}/`;
 const BRANCH_BY_CODE_ROUTE = (code: string) =>
   `${API_VERSION}/${APP_EV}/branches/by-code/${encodeURIComponent(code)}/`;
@@ -46,7 +45,6 @@ export {
   AUTH_VERIFY_OTP_ROUTE,
   BRANCH_BY_CODE_ROUTE,
   BRANCH_DETAIL_ROUTE,
-  BRANCHES_LIST_ROUTE,
   CHARGING_START_ROUTE,
   CHARGING_STOP_ROUTE,
   ME_ROUTE,

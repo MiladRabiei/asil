@@ -1,8 +1,8 @@
 'use client';
 
-import { useCurrentLocation } from '@/lib/geolocation';
-import { useNearbyStations } from '@/shared/_service/hook.query';
 import { useUser } from '@/context/UserContext';
+import { useCurrentLocation } from '@/lib/geolocation';
+import { useNearbyStations } from '@/lib/stations';
 import { useGetWallet } from '@/shared/_service/hook.query';
 import { AppTopBar } from '@/shared/layout/AppTopBar';
 import Button from '@/shared/UI/Button';

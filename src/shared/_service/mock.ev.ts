@@ -60,10 +60,6 @@ export const MOCK_WALLET: IWallet = {
   ],
 };
 
-export async function fetchMockBranches(): Promise<IChargingBranch[]> {
-  return Promise.resolve(MOCK_BRANCHES);
-}
-
 export async function fetchMockBranch(id: string): Promise<IChargingBranch | undefined> {
   return Promise.resolve(MOCK_BRANCHES.find((b) => b.id === id));
 }

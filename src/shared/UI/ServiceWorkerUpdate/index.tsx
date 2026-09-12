@@ -1,79 +1,75 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
-/**
- * Keeps update UX outside the service worker itself — sw.js is only
- * responsible for caching; this component is responsible for asking the
- * user before activating a waiting worker (so an update never yanks state
- * out from under someone mid-session).
- */
+/** Automatically activates and applies a newly deployed service worker. */
 export function ServiceWorkerUpdate() {
-  const [waiting, setWaiting] = useState<ServiceWorker | null>(null);
-
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
+
+    const hadController = Boolean(navigator.serviceWorker.controller);
     let disposed = false;
-    let registration: ServiceWorkerRegistration | null = null;
-    let onlineHandler: (() => void) | null = null;
 
-    const setup = async () => {
-      registration = await navigator.serviceWorker.ready;
-      if (disposed || !registration) return;
-
-      const inspect = () => {
-        if (registration?.waiting) setWaiting(registration.waiting);
-      };
-
-      const onUpdateFound = () => {
-        const worker = registration?.installing;
-        if (!worker) return;
-        worker.addEventListener('statechange', () => {
-          if (worker.state === 'installed' && navigator.serviceWorker.controller) inspect();
-        });
-      };
-
-      registration.addEventListener('updatefound', onUpdateFound);
-      inspect();
-      onlineHandler = () => void registration?.update().catch(() => undefined);
-      window.addEventListener('online', onlineHandler);
-
-      return () => {
-        registration?.removeEventListener('updatefound', onUpdateFound);
-        if (onlineHandler) window.removeEventListener('online', onlineHandler);
-      };
+    const activateWaitingWorker = (worker: ServiceWorker | null | undefined) => {
+      if (disposed || !worker || !navigator.serviceWorker.controller) return;
+      worker.postMessage({ type: 'SKIP_WAITING' });
     };
 
-    let cleanup: (() => void) | undefined;
-    void setup().then((fn) => {
-      cleanup = fn;
-    });
+    const watchInstallingWorker = (worker: ServiceWorker | null) => {
+      if (!worker) return;
+
+      const onStateChange = () => {
+        if (worker.state === 'installed') {
+          activateWaitingWorker(worker);
+        }
+      };
+
+      worker.addEventListener('statechange', onStateChange);
+      if (worker.state === 'installed') onStateChange();
+    };
+
+    const onControllerChange = () => {
+      if (!disposed && hadController) window.location.reload();
+    };
+
+    navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+
+    const update = async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        if (disposed) return;
+
+        // An update may already have finished installing while this tab was
+        // hidden/backgrounded. Apply that waiting worker immediately.
+        activateWaitingWorker(registration.waiting);
+
+        // For an update currently being downloaded, wait for it to reach
+        // `installed`, then explicitly move it from waiting -> active.
+        watchInstallingWorker(registration.installing);
+
+        await registration.update();
+        if (disposed) return;
+
+        // `update()` can discover an already-installed waiting worker, so
+        // check once more after the update attempt completes.
+        activateWaitingWorker(registration.waiting);
+        watchInstallingWorker(registration.installing);
+      } catch {
+        // Service Worker updates are best-effort; app startup must not depend on them.
+      }
+    };
+
+    void update();
+    window.addEventListener('online', update);
+    document.addEventListener('visibilitychange', update);
 
     return () => {
       disposed = true;
-      cleanup?.();
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      window.removeEventListener('online', update);
+      document.removeEventListener('visibilitychange', update);
     };
   }, []);
 
-  if (!waiting) return null;
-
-  const apply = () => {
-    waiting.postMessage({ type: 'SKIP_WAITING' });
-    navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload(), {
-      once: true,
-    });
-  };
-
-  return (
-    <div className="fixed inset-x-4 bottom-[calc(1rem+var(--safe-bottom,0px))] z-[70] mx-auto flex max-w-md items-center justify-between gap-3 rounded-xl border bg-background p-4 shadow-lg">
-      <p className="text-sm">نسخه جدید برنامه آماده است.</p>
-      <button
-        type="button"
-        onClick={apply}
-        className="rounded-lg bg-foreground px-4 py-2 text-background"
-      >
-        به‌روزرسانی
-      </button>
-    </div>
-  );
+  return null;
 }
