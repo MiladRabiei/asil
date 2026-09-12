@@ -5,8 +5,9 @@ import ClientApolloProvider from '@/lib/apollo/ClientApolloProvider';
 import { NotificationProvider } from '@/lib/notification/NotificationProvider';
 import { PwaProvider } from '@/lib/pwa';
 import QueryProvider from '@/lib/QueryProvider';
+import { InstallPrompt } from '@/shared/UI/InstallPrompt';
+import { PushNotificationGate } from '@/shared/UI/PushNotificationGate';
 import type { Metadata, Viewport } from 'next';
-
 // "Asil" — matches the reference product design (⚡ Asil). Note: an earlier
 // infra spike's manifest used "شارژینو" instead — confirm the final brand
 // name officially before shipping; this is just the one place to change it.
@@ -53,8 +54,8 @@ export default function RootLayout({
                     <main className="w-full min-h-dvh">{children}</main>
                     {/* Soft-ask banners — both read their own visibility state and
                         render nothing when not applicable, safe to always mount here. */}
-                    {/* <InstallPrompt /> */}
-                    {/* <PushNotificationGate /> */}
+                    <InstallPrompt />
+                    <PushNotificationGate />
                   </NotificationProvider>
                 </UserProvider>
               </AuthProvider>

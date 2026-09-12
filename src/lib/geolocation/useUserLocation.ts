@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
 import type { IMapPosition } from '@/shared/_service/interface.map';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface UserLocationState {
   position: IMapPosition | null;
@@ -18,13 +18,6 @@ const LOCATION_OPTIONS: PositionOptions = {
   maximumAge: 15_000,
 };
 
-/**
- * Application-level location state for the map.
- *
- * watchPosition keeps the marker fresh while the map is active. A one-shot
- * refresh is also triggered when the document becomes visible again, because
- * PWAs can be suspended while the user switches tabs/apps.
- */
 export function useUserLocation(enabled = true) {
   const [state, setState] = useState<UserLocationState>({
     position: null,
@@ -34,13 +27,18 @@ export function useUserLocation(enabled = true) {
     loading: enabled,
     error: null,
   });
+
   const watchIdRef = useRef<number | null>(null);
 
   const applyPosition = useCallback((position: GeolocationPosition) => {
     const { coords } = position;
+
     setState((current) => ({
       ...current,
-      position: { lat: coords.latitude, lng: coords.longitude },
+      position: {
+        lat: coords.latitude,
+        lng: coords.longitude,
+      },
       accuracyMeters: Number.isFinite(coords.accuracy) ? coords.accuracy : null,
       heading: Number.isFinite(coords.heading ?? NaN) ? coords.heading : null,
       speedMetersPerSecond: Number.isFinite(coords.speed ?? NaN) ? coords.speed : null,
@@ -62,12 +60,17 @@ export function useUserLocation(enabled = true) {
       setState((current) => ({
         ...current,
         loading: false,
-        error: 'Geolocation is not supported by this browser.',
+        error: 'موقعیت مکانی توسط مرورگر پشتیبانی نمی‌شود.',
       }));
       return;
     }
 
-    setState((current) => ({ ...current, loading: true, error: null }));
+    setState((current) => ({
+      ...current,
+      loading: true,
+      error: null,
+    }));
+
     navigator.geolocation.getCurrentPosition(applyPosition, applyError, {
       ...LOCATION_OPTIONS,
       maximumAge: 0,
@@ -76,11 +79,10 @@ export function useUserLocation(enabled = true) {
 
   useEffect(() => {
     if (!enabled) {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation?.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-      setState((current) => ({ ...current, loading: false }));
+      setState((current) => ({
+        ...current,
+        loading: false,
+      }));
       return;
     }
 
@@ -88,33 +90,33 @@ export function useUserLocation(enabled = true) {
       setState((current) => ({
         ...current,
         loading: false,
-        error: 'Geolocation is not supported by this browser.',
+        error: 'موقعیت مکانی توسط مرورگر پشتیبانی نمی‌شود.',
       }));
       return;
     }
 
-    setState((current) => ({ ...current, loading: true, error: null }));
+    setState((current) => ({
+      ...current,
+      loading: true,
+      error: null,
+    }));
+
     watchIdRef.current = navigator.geolocation.watchPosition(
       applyPosition,
       applyError,
       LOCATION_OPTIONS
     );
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') refresh();
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    refresh();
-
     return () => {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
       }
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [applyError, applyPosition, enabled, refresh]);
+  }, [enabled, applyError, applyPosition]);
 
-  return { ...state, refresh };
+  return {
+    ...state,
+    refresh,
+  };
 }

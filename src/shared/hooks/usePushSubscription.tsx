@@ -8,6 +8,7 @@ import {
   isPushSupported,
   registerServiceWorker,
 } from '@/lib/pushNotifications/pushClient';
+import { detectPlatform, isStandalone } from '@/lib/pwaInstall/detect';
 import { usePostPushSubscribe, usePostPushUnsubscribe } from '@/shared/_service/hook.mutation';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -28,6 +29,15 @@ export function usePushSubscription(userId: string | null) {
       setStatus('unsupported');
       return;
     }
+
+    const platform = detectPlatform();
+
+    // iOS only supports push for installed standalone PWAs.
+    if (platform === 'ios' && !isStandalone()) {
+      setStatus('unsupported');
+      return;
+    }
+
     (async () => {
       await registerServiceWorker();
       const existing = await getExistingSubscription();

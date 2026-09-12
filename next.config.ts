@@ -15,6 +15,9 @@ type WebpackConfig = {
 };
 
 const nextConfig: NextConfig = {
+  // Allow your phone to access Next.js dev resources/HMR
+  allowedDevOrigins: ['172.22.3.85'],
+
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
