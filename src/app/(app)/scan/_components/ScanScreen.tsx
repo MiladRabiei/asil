@@ -1,6 +1,7 @@
 'use client';
 
-import { Link, MapPin } from 'lucide-react';
+import { Link2, MapPin } from 'lucide-react';
+import NextLink from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 import { AppTopBar } from '@/shared/layout/AppTopBar';
@@ -25,17 +26,28 @@ export default function ScanScreen() {
   const branchMismatch =
     Boolean(expectedBranchId) && Boolean(branch) && String(branch?.id) !== expectedBranchId;
 
+  // A device we already know has no camera can't do anything useful with
+  // the scan UI — skip straight to manual entry instead of showing a "tap
+  // to start" button that's guaranteed to fail.
+  const noCamera = hasCamera === false;
+  const manualEntryActive = showManualEntry || noCamera;
+
   return (
     <div className="min-h-dvh">
       <AppTopBar eyebrow="Scan" className="text-white" />
 
       <div className="mx-auto flex w-full max-w-lg flex-col gap-4 px-4 py-6">
-        <QrScanner videoRef={videoRef} status={status} onStart={start} />
-
-        {hasCamera === false && (
-          <p className="text-center text-sm text-neutral-500">
-            دوربین در این دستگاه در دسترس نیست.
-          </p>
+        {manualEntryActive ? (
+          <>
+            {noCamera && (
+              <p className="text-center text-sm text-neutral-500">
+                دوربینی روی این دستگاه شناسایی نشد. کد ایستگاه را دستی وارد کنید.
+              </p>
+            )}
+            <ManualCodeEntry onSubmit={submitManualCode} />
+          </>
+        ) : (
+          <QrScanner videoRef={videoRef} status={status} onStart={start} />
         )}
 
         {error && <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</div>}
@@ -63,14 +75,11 @@ export default function ScanScreen() {
         )}
 
         {status === 'success' && branch && !branchMismatch && (
-          <Button
-            type="button"
-            onClick={() => {
-              // Keep your existing navigation/action here.
-            }}
-          >
-            ادامه
-          </Button>
+          <NextLink href={`/map/${branch.id}`}>
+            <Button type="button" className="w-full">
+              ادامه
+            </Button>
+          </NextLink>
         )}
 
         {status === 'error' && (
@@ -79,17 +88,17 @@ export default function ScanScreen() {
           </Button>
         )}
 
-        <button
-          type="button"
-          onClick={() => setShowManualEntry((current) => !current)}
-          className="flex items-center justify-center gap-2 text-sm text-primary"
-        >
-          <Link className="size-4" />
+        {!noCamera && (
+          <button
+            type="button"
+            onClick={() => setShowManualEntry((current) => !current)}
+            className="flex items-center justify-center gap-2 text-sm text-primary"
+          >
+            <Link2 className="size-4" />
 
-          {showManualEntry ? 'بستن ورود دستی' : 'ورود دستی کد'}
-        </button>
-
-        {showManualEntry && <ManualCodeEntry onSubmit={submitManualCode} />}
+            {showManualEntry ? 'بستن ورود دستی' : 'ورود دستی کد'}
+          </button>
+        )}
       </div>
     </div>
   );

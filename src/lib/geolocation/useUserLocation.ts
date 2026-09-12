@@ -18,6 +18,25 @@ const LOCATION_OPTIONS: PositionOptions = {
   maximumAge: 15_000,
 };
 
+const UNSUPPORTED_MESSAGE = 'موقعیت مکانی توسط مرورگر پشتیبانی نمی‌شود.';
+
+// GeolocationPositionError.message is the browser's own (English) string —
+// e.g. "User denied Geolocation" — which doesn't belong in an otherwise
+// fully-Persian UI. Map by .code instead so every failure path has a
+// proper Persian message, and none of them silently fall back to English.
+function localizeLocationError(reason: GeolocationPositionError): string {
+  switch (reason.code) {
+    case reason.PERMISSION_DENIED:
+      return 'دسترسی به موقعیت مکانی رد شد. برای دیدن ایستگاه‌های نزدیک، دسترسی Location را در تنظیمات مرورگر فعال کنید.';
+    case reason.POSITION_UNAVAILABLE:
+      return 'موقعیت مکانی در حال حاضر در دسترس نیست. لطفاً دوباره تلاش کنید.';
+    case reason.TIMEOUT:
+      return 'دریافت موقعیت مکانی بیش از حد طول کشید. لطفاً دوباره تلاش کنید.';
+    default:
+      return 'دسترسی به موقعیت مکانی ممکن نشد.';
+  }
+}
+
 export function useUserLocation(enabled = true) {
   const [state, setState] = useState<UserLocationState>({
     position: null,
@@ -51,7 +70,7 @@ export function useUserLocation(enabled = true) {
     setState((current) => ({
       ...current,
       loading: false,
-      error: reason.message,
+      error: localizeLocationError(reason),
     }));
   }, []);
 
@@ -60,7 +79,7 @@ export function useUserLocation(enabled = true) {
       setState((current) => ({
         ...current,
         loading: false,
-        error: 'موقعیت مکانی توسط مرورگر پشتیبانی نمی‌شود.',
+        error: UNSUPPORTED_MESSAGE,
       }));
       return;
     }
@@ -90,7 +109,7 @@ export function useUserLocation(enabled = true) {
       setState((current) => ({
         ...current,
         loading: false,
-        error: 'موقعیت مکانی توسط مرورگر پشتیبانی نمی‌شود.',
+        error: UNSUPPORTED_MESSAGE,
       }));
       return;
     }
@@ -107,13 +126,27 @@ export function useUserLocation(enabled = true) {
       LOCATION_OPTIONS
     );
 
+    // iOS/WebKit can suspend an active geolocation watch while the PWA is
+    // backgrounded (tab switched, app minimized) and never resume it on its
+    // own — a one-shot refresh when the page becomes visible again is what
+    // actually recovers a live position instead of leaving the marker stale.
+    // (watchPosition's own first callback already supplies the initial
+    // position on mount — calling refresh() here too would just fire a
+    // second, redundant getCurrentPosition request racing the first.)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
         watchIdRef.current = null;
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [enabled, applyError, applyPosition]);
+  }, [applyError, applyPosition, enabled, refresh]);
 
   return {
     ...state,
