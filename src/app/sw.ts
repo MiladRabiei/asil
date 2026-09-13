@@ -22,7 +22,14 @@ const serwist = new Serwist({
   // Adding them here directly guarantees the doc's claim is actually true —
   // bare strings are valid precache entries (Serwist treats them as
   // no-revision URLs), no extra config shape needed.
-  precacheEntries: [...(self.__SW_MANIFEST ?? []), '/', '/auth'],
+  // `/`, `/auth`, and `/offline.html` are already precached with proper
+  // revision hashes via `additionalPrecacheEntries` in
+  // src/app/serwist/[path]/route.ts (createSerwistRoute merges those into
+  // self.__SW_MANIFEST at build time, before this file ever runs). Adding
+  // '/' and '/auth' again here as bare strings only creates duplicate
+  // precache entries — one with a real revision, one without — for
+  // something already handled correctly. Removed.
+  precacheEntries: self.__SW_MANIFEST,
   // false (the default) is deliberate, not an oversight: it makes Serwist
   // register its own `message` listener for `{ type: 'SKIP_WAITING' }`
   // instead of calling self.skipWaiting() unconditionally at install.
@@ -109,24 +116,37 @@ function resolveNotificationContent(payload: PushNotificationPayload): {
   icon?: string;
   actions?: { action: string; title: string; icon?: string }[];
 } {
-  switch (payload.type) {
-    case 'branch_offline':
-      return { title: payload.title, body: payload.body, url: `/map/${payload.branchId}` };
-    case 'branch_available':
-      return { title: payload.title, body: payload.body, url: `/map/${payload.branchId}` };
-    case 'charging_session':
-      return {
-        title: payload.title,
-        body: payload.body,
-        url: `/wallet/sessions/${payload.sessionId}`,
-      };
-    case 'wallet':
-      return { title: payload.title, body: payload.body, url: '/wallet' };
-    case 'promo':
-      return { title: payload.title, body: payload.body, url: payload.url };
-    default:
-      return { title: payload.title || 'اعلان', body: payload.body || '', url: '/' };
-  }
+  // Every case passes through the backend's own url/icon/actions verbatim —
+  // this worker never reconstructs a URL from an id field, matching what
+  // the backend actually sends. Cases only differ in which fallback
+  // title/body text applies when the backend omits them.
+  const fallback = (() => {
+    switch (payload.type) {
+      case 'branch_offline':
+        return { title: 'وضعیت ایستگاه', body: 'این ایستگاه در حال حاضر خارج از سرویس است.' };
+      case 'branch_available':
+        return {
+          title: 'ایستگاه آماده شارژ است',
+          body: 'ایستگاه موردنظر شما اکنون آماده استفاده است.',
+        };
+      case 'charging_session':
+        return { title: 'وضعیت شارژ', body: 'وضعیت جلسه شارژ شما تغییر کرده است.' };
+      case 'wallet':
+        return { title: 'کیف پول', body: 'وضعیت کیف پول شما تغییر کرده است.' };
+      case 'promo':
+        return { title: 'اطلاع‌رسانی', body: '' };
+      default:
+        return { title: 'Asil', body: '' };
+    }
+  })();
+
+  return {
+    title: payload.title || fallback.title,
+    body: payload.body || fallback.body,
+    url: payload.url || '/',
+    icon: payload.icon,
+    actions: payload.actions,
+  };
 }
 
 serwist.addEventListeners();

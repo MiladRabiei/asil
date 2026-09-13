@@ -40,17 +40,30 @@ export interface UpdatePushTopicsResponse {}
 // (decoded via `event.data.json()` in src/app/sw.ts) — distinct from the
 // subscribe/topic management types above, which describe calls this app
 // makes TO the backend, not messages the backend pushes TO this app.
-export type PushNotificationPayload =
-  | { type: 'branch_offline'; title: string; body: string; branchId: string }
-  | { type: 'branch_available'; title: string; body: string; branchId: string }
-  | { type: 'charging_session'; title: string; body: string; sessionId: string }
-  | { type: 'wallet'; title: string; body: string }
-  | { type: 'promo'; title: string; body: string; url: string }
-  // Anything else — including a payload from an older app version whose
-  // `type` this build no longer recognizes, or a malformed/missing `type` —
-  // still needs a title/body to fall back to; see the `default` case in
-  // sw.ts's resolveNotificationContent. `type` here is `undefined`, not
-  // `string`, on purpose: a wide `string` tag overlaps the literal tags
-  // above and breaks switch narrowing on `payload.type` for every other
-  // case, not just this one.
-  | { type?: undefined; title?: string; body?: string };
+//
+// Every notification type shares the same optional fields — the backend
+// sends a ready-made `url`/`icon`/`actions` directly, not a raw
+// branchId/sessionId for the worker to build a URL from — and each type
+// only differs in which fallback title/body strings apply when the
+// backend omits them (see resolveNotificationContent in sw.ts).
+export type PushNotificationType =
+  'branch_offline' | 'branch_available' | 'charging_session' | 'wallet' | 'promo';
+
+export interface PushNotificationAction {
+  action: string;
+  title: string;
+  icon?: string;
+}
+
+export interface PushNotificationPayload {
+  // Untyped string fallback included deliberately: an older/newer backend
+  // version sending a `type` this build doesn't recognize should still
+  // fall through to the generic branch below instead of failing to compile
+  // against a closed union.
+  type?: PushNotificationType | string;
+  title?: string;
+  body?: string;
+  icon?: string;
+  url?: string;
+  actions?: PushNotificationAction[];
+}
