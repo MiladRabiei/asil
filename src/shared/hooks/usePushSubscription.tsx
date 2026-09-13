@@ -50,7 +50,13 @@ export function usePushSubscription(userId: string | null) {
       return null;
     }
     try {
-      const sub = await createSubscription(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!);
+      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+
+      if (!vapidPublicKey) {
+        throw new Error('vapid_public_key_missing');
+      }
+
+      const sub = await createSubscription(vapidPublicKey);
       const json = sub.toJSON();
       await subscribeOnServer({
         endpoint: sub.endpoint,

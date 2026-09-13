@@ -2,73 +2,67 @@
 
 import { useSerwist } from '@serwist/turbopack/react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
-/**
- * Serwist owns SW installation, precaching, routing and cache cleanup.
- * This component owns Asil's activation *policy*: never let a new worker
- * take over while a mutation is in flight (wallet top-up, charging
- * actions, etc.) — sw.ts sets `skipWaiting: false` specifically so nothing
- * activates until this component explicitly says so via
- * `serwist.messageSkipWaiting()`.
- *
- * Flow:
- * active v1 → v2 installs → 'waiting' fires → (deferred if mutating) →
- * messageSkipWaiting() → v2 activates → clientsClaim → 'controlling' →
- * reload once (only if a worker was already controlling before — i.e. a
- * genuine update, not the very first install).
- */
 export function ServiceWorkerUpdate() {
   const { serwist } = useSerwist();
   const queryClient = useQueryClient();
 
+  const hadController = useRef(false);
+  const updatePending = useRef(false);
+
   useEffect(() => {
     if (!serwist) return;
 
-    const hadController = Boolean(navigator.serviceWorker.controller);
-    let pendingSkip = false;
+    hadController.current = Boolean(navigator.serviceWorker.controller);
 
-    const trySkipWaiting = () => {
+    const activateWaitingWorker = () => {
+      if (!updatePending.current) return;
       if (queryClient.isMutating() > 0) return;
+
+      updatePending.current = false;
       serwist.messageSkipWaiting();
-      pendingSkip = false;
     };
 
-    const onWaiting = () => {
-      pendingSkip = true;
-      trySkipWaiting();
+    const handleWaiting = () => {
+      updatePending.current = true;
+      activateWaitingWorker();
     };
 
-    const onControlling = () => {
-      if (hadController) window.location.reload();
-    };
-
-    serwist.addEventListener('waiting', onWaiting);
-    serwist.addEventListener('controlling', onControlling);
-
-    const update = () => void serwist.update().catch(() => undefined);
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // Returning to the foreground is also a good moment to check for
-        // an update we might have missed while backgrounded.
-        void update();
-      } else if (pendingSkip) {
-        // Backgrounded with an update already waiting — safe to apply now
-        // even if we couldn't earlier.
-        trySkipWaiting();
+    const handleControlling = () => {
+      if (hadController.current) {
+        window.location.reload();
       }
     };
 
-    void update();
-    window.addEventListener('online', update);
-    document.addEventListener('visibilitychange', onVisibilityChange);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        activateWaitingWorker();
+      }
+    };
+
+    const handleOnline = () => {
+      activateWaitingWorker();
+    };
+
+    const unsubscribeMutationCache = queryClient.getMutationCache().subscribe(() => {
+      activateWaitingWorker();
+    });
+
+    serwist.addEventListener('waiting', handleWaiting);
+    serwist.addEventListener('controlling', handleControlling);
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
 
     return () => {
-      serwist.removeEventListener('waiting', onWaiting);
-      serwist.removeEventListener('controlling', onControlling);
-      window.removeEventListener('online', update);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
+      serwist.removeEventListener('waiting', handleWaiting);
+      serwist.removeEventListener('controlling', handleControlling);
+
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+
+      unsubscribeMutationCache();
     };
   }, [serwist, queryClient]);
 
