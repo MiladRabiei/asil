@@ -141,6 +141,7 @@ export default function NeshanMapView({
   const [selectedMarker, setSelectedMarker] = useState<IMapMarker | null>(null);
 
   const didCenterOnInitialLocationRef = useRef(false);
+  const suppressNextMoveStartRef = useRef(false);
 
   const [popupElement] = useState<HTMLDivElement | null>(() =>
     typeof document === 'undefined' ? null : document.createElement('div')
@@ -293,6 +294,17 @@ export default function NeshanMapView({
     };
 
     const moveStartHandler = () => {
+      // autoPan (see the POPUP effect below) calls setPosition() -> pans the
+      // map to reveal the popup -> fires this same 'movestart' event OL uses
+      // for a genuine user drag. Without this guard, opening a popup that
+      // needs panning closes itself the instant it starts opening — the pan
+      // reads as "the page navigated", and only the second click (once the
+      // map is already panned into place, so autoPan has nothing left to
+      // do) actually shows the popup.
+      if (suppressNextMoveStartRef.current) {
+        suppressNextMoveStartRef.current = false;
+        return;
+      }
       setSelectedMarker(null);
     };
 
@@ -456,13 +468,26 @@ export default function NeshanMapView({
 
     map.addOverlay(overlay);
 
+    let safetyTimer: number | undefined;
+
     if (selectedMarker) {
+      // Arm the guard right before the call that may trigger autoPan.
+      // Safety-net timeout covers the case where the marker is already
+      // fully visible and autoPan decides no pan is needed at all — then
+      // no movestart ever fires to consume (and clear) the flag, which
+      // would otherwise incorrectly swallow the *next* real user drag.
+      // 250ms is comfortably past the 200ms autoPan animation above.
+      suppressNextMoveStartRef.current = true;
+      safetyTimer = window.setTimeout(() => {
+        suppressNextMoveStartRef.current = false;
+      }, 250);
       overlay.setPosition(fromLonLat([selectedMarker.position.lng, selectedMarker.position.lat]));
     } else {
       overlay.setPosition(undefined);
     }
 
     return () => {
+      if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
       map.removeOverlay(overlay);
     };
   }, [map, selectedMarker, popupElement]);
