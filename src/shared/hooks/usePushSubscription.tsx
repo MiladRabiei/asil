@@ -6,7 +6,6 @@ import {
   destroySubscription,
   getExistingSubscription,
   isPushSupported,
-  registerServiceWorker,
 } from '@/lib/pushNotifications/pushClient';
 import { detectPlatform, isStandalone } from '@/lib/pwaInstall/detect';
 import { usePostPushSubscribe, usePostPushUnsubscribe } from '@/shared/_service/hook.mutation';
@@ -39,7 +38,6 @@ export function usePushSubscription(userId: string | null) {
     }
 
     (async () => {
-      await registerServiceWorker();
       const existing = await getExistingSubscription();
       setSubscription(existing);
       setStatus(existing ? 'subscribed' : 'unsubscribed');

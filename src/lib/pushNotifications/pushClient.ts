@@ -1,5 +1,11 @@
 export function isPushSupported(): boolean {
-  return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
+  return (
+    typeof window !== 'undefined' &&
+    window.isSecureContext &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    'Notification' in window
+  );
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
@@ -7,10 +13,6 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = atob(base64);
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
-}
-
-export async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
-  return navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' });
 }
 
 export async function getExistingSubscription(): Promise<PushSubscription | null> {

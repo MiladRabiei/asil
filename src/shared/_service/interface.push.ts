@@ -35,3 +35,22 @@ export interface UpdatePushTopicsPayload {
   topics: PushTopic[];
 }
 export interface UpdatePushTopicsResponse {}
+
+// Shape of the JSON payload the backend sends inside a push message itself
+// (decoded via `event.data.json()` in src/app/sw.ts) — distinct from the
+// subscribe/topic management types above, which describe calls this app
+// makes TO the backend, not messages the backend pushes TO this app.
+export type PushNotificationPayload =
+  | { type: 'branch_offline'; title: string; body: string; branchId: string }
+  | { type: 'branch_available'; title: string; body: string; branchId: string }
+  | { type: 'charging_session'; title: string; body: string; sessionId: string }
+  | { type: 'wallet'; title: string; body: string }
+  | { type: 'promo'; title: string; body: string; url: string }
+  // Anything else — including a payload from an older app version whose
+  // `type` this build no longer recognizes, or a malformed/missing `type` —
+  // still needs a title/body to fall back to; see the `default` case in
+  // sw.ts's resolveNotificationContent. `type` here is `undefined`, not
+  // `string`, on purpose: a wide `string` tag overlaps the literal tags
+  // above and breaks switch narrowing on `payload.type` for every other
+  // case, not just this one.
+  | { type?: undefined; title?: string; body?: string };

@@ -1,3 +1,4 @@
+import { withSerwist } from '@serwist/turbopack';
 import type { NextConfig } from 'next';
 
 type WebpackRule = {
@@ -17,6 +18,19 @@ type WebpackConfig = {
 const nextConfig: NextConfig = {
   // Allow your phone to access Next.js dev resources/HMR
   allowedDevOrigins: ['172.22.3.85'],
+
+  async headers() {
+    return [
+      {
+        source: '/serwist/sw.js',
+        headers: [
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self'" },
+        ],
+      },
+    ];
+  },
 
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -66,4 +80,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);
